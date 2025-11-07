@@ -11,10 +11,14 @@ trap term_proc SIGTERM
 redirect_logs() {
     tail -F /var/www/MISP/app/tmp/logs/error.log > /dev/stdout 2>/dev/null &
 }
+# Fix error log location for OpenShift
+PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;")
+sed -i "s|^error_log.*|error_log = /tmp/php-fpm.log|g" /etc/php/${PHP_VERSION}/fpm/php-fpm.conf 2>/dev/null || true
+sed -i "s|^;error_log.*|error_log = /tmp/php-fpm.log|g" /etc/php/${PHP_VERSION}/fpm/php-fpm.conf 2>/dev/null || true
 
-sed -i "s/^\(listen\.owner\s*=\s*\).*/\1$(whoami)/" /etc/php/7.4/fpm/pool.d/www.conf
-sed -i "s/^\(listen\.group\s*=\s*\).*/\1$(id -gn)/" /etc/php/7.4/fpm/pool.d/www.conf
-sed -i "s/;listen.mode = .*/listen.mode = 660/" "/etc/php/7.4/fpm/pool.d/www.conf"
+sed -i "s/^\(listen\.owner\s*=\s*\).*/\1$(whoami)/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+sed -i "s/^\(listen\.group\s*=\s*\).*/\1$(id -gn)/" /etc/php/${PHP_VERSION}/fpm/pool.d/www.conf
+sed -i "s/;listen.mode = .*/listen.mode = 660/" "/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
 
 change_php_vars() {
     ESCAPED=$(printf '%s\n' "$REDIS_PASSWORD" | sed -e 's/[\/&]/\\&/g')

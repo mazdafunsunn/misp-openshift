@@ -66,7 +66,7 @@ enforce_env_settings() {
             print_value='<hidden>'
         fi
         echo "Enforcing $description setting '$setting' to env var or default value '$print_value'..."
-        sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q $command_args "$setting" "$default_value"
+        /var/www/MISP/app/Console/cake Admin setSetting -q $command_args "$setting" "$default_value"
     done
 }
 
@@ -82,7 +82,7 @@ set_safe_default() {
             print_value='<hidden>'
         fi
         echo "Updating unset $description setting '$setting' to '$print_value'..."
-        sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q $command_args "$setting" "$default_value"
+        /var/www/MISP/app/Console/cake Admin setSetting -q $command_args "$setting" "$default_value"
     fi
 }
 

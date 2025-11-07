@@ -115,7 +115,7 @@ set_up_oidc() {
         if [[ "$(echo "$OIDC_SCOPES" | jq type -r)" == "array" ]]; then
             # Run the modify_config.php script to update OidcAuth configuration with the provided OIDC_SCOPES
             # The 'scopes' field will only be added if OIDC_SCOPES has a value
-            sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+            php /var/www/MISP/tests/modify_config.php modify "{
                 \"OidcAuth\": {
                     \"scopes\": ${OIDC_SCOPES}
                 }
@@ -129,19 +129,19 @@ set_up_oidc() {
             else
                 OIDC_LOGOUT_URL_COMPLETE="${OIDC_LOGOUT_URL}?post_logout_redirect_uri=${BASE_URL}/users/login"
             fi
-            sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q "Plugin.CustomAuth_custom_logout" "${OIDC_LOGOUT_URL_COMPLETE}"
+            /var/www/MISP/app/Console/cake Admin setSetting -q "Plugin.CustomAuth_custom_logout" "${OIDC_LOGOUT_URL_COMPLETE}"
         else
             echo "OIDC_LOGOUT_URL is not set"
         fi
 
         # Disable password confirmation as recommended in https://github.com/MISP/MISP/issues/8116
-        sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q "Security.require_password_confirmation" false
+        /var/www/MISP/app/Console/cake Admin setSetting -q "Security.require_password_confirmation" false
 
         echo "... OIDC authentication enabled"
 
     else
         # Reset OIDC authentication settings to empty values
-        sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+        php /var/www/MISP/tests/modify_config.php modify "{
             \"OidcAuth\": {
                 \"provider_url\": \"\",
                 \"issuer\": \"\",
@@ -156,16 +156,16 @@ set_up_oidc() {
 
         # Remove the line containing 'scopes' => from config.php
         # This prevents an empty scopes entry from being loaded in the configuration.
-        sudo -u www-data sed -i "/'scopes' =>/d" /var/www/MISP/app/Config/config.php
+        sed -i "/'scopes' =>/d" /var/www/MISP/app/Config/config.php
 
         # Use sed to remove the OidcAuth.Oidc entry from the 'auth' array in the config.php
-        sudo -u www-data sed -i "/'auth' =>/,/)/ { /0 => 'OidcAuth.Oidc',/d; }" /var/www/MISP/app/Config/config.php
+        sed -i "/'auth' =>/,/)/ { /0 => 'OidcAuth.Oidc',/d; }" /var/www/MISP/app/Config/config.php
 
         # Remove the custom logout URL
-        sudo -u www-data sed -i "/'CustomAuth_custom_logout' =>/d" /var/www/MISP/app/Config/config.php
+        sed -i "/'CustomAuth_custom_logout' =>/d" /var/www/MISP/app/Config/config.php
 
         # Re-enable password confirmation if necessary
-        sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q "Security.require_password_confirmation" true
+        /var/www/MISP/app/Console/cake Admin setSetting -q "Security.require_password_confirmation" true
 
         echo "... OIDC authentication disabled"
     fi
@@ -186,7 +186,7 @@ set_up_apachesecureauth() {
     # APACHESECUREAUTH_LDAP_SEARCH_FILTER may be empty
     check_env_vars APACHESECUREAUTH_LDAP_APACHE_ENV APACHESECUREAUTH_LDAP_SERVER APACHESECUREAUTH_LDAP_STARTTLS APACHESECUREAUTH_LDAP_READER_USER APACHESECUREAUTH_LDAP_READER_PASSWORD APACHESECUREAUTH_LDAP_DN APACHESECUREAUTH_LDAP_SEARCH_ATTRIBUTE APACHESECUREAUTH_LDAP_FILTER APACHESECUREAUTH_LDAP_DEFAULT_ROLE_ID APACHESECUREAUTH_LDAP_DEFAULT_ORG APACHESECUREAUTH_LDAP_OPT_PROTOCOL_VERSION APACHESECUREAUTH_LDAP_OPT_NETWORK_TIMEOUT APACHESECUREAUTH_LDAP_OPT_REFERRALS
 
-    sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+    php /var/www/MISP/tests/modify_config.php modify "{
         \"ApacheSecureAuth\": {
             \"apacheEnv\": \"${APACHESECUREAUTH_LDAP_APACHE_ENV}\",
             \"ldapServer\": \"${APACHESECUREAUTH_LDAP_SERVER}\",
@@ -246,7 +246,7 @@ set_up_ldap() {
     }" > /dev/null
 
     # Configure LdapAuth in MISP
-    sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+    php /var/www/MISP/tests/modify_config.php modify "{
             \"Security\": {
                 \"auth\": [\"LdapAuth.Ldap\"]
             }
@@ -304,7 +304,7 @@ set_up_aad() {
 
 set_up_session() {
     # Command to modify MISP session configuration
-    sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+    php /var/www/MISP/tests/modify_config.php modify "{
         \"Session\": {
             \"timeout\": ${PHP_SESSION_TIMEOUT},
             \"cookie_timeout\": ${PHP_SESSION_COOKIE_TIMEOUT},
@@ -324,7 +324,7 @@ set_up_session() {
 
 set_up_session() {
     # Command to modify MISP session configuration
-    sudo -u www-data php /var/www/MISP/tests/modify_config.php modify "{
+    php /var/www/MISP/tests/modify_config.php modify "{
         \"Session\": {
             \"timeout\": ${PHP_SESSION_TIMEOUT},
             \"cookie_timeout\": ${PHP_SESSION_COOKIE_TIMEOUT},
@@ -372,7 +372,7 @@ init_user() {
     if [ ! -z "$ADMIN_ORG" ]; then
         echo "... setting admin org to '${ADMIN_ORG}'"
         echo "UPDATE $MYSQL_DATABASE.organisations SET name = \"${ADMIN_ORG}\" where id = 1;" | ${MYSQL_CMD}
-        sudo -u www-data /var/www/MISP/app/Console/cake Admin setSetting -q "MISP.org" "${ADMIN_ORG}"
+        /var/www/MISP/app/Console/cake Admin setSetting -q "MISP.org" "${ADMIN_ORG}"
     fi
 
     if [ ! -z "$ADMIN_ORG_UUID" ]; then
