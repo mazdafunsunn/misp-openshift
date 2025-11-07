@@ -1,9 +1,8 @@
-# MISP Docker images
+# MISP Openshift images
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/MISP/misp-docker/release-latest.yml)](https://github.com/orgs/MISP/packages)
-[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/MISP/Docker)
-
-A production ready Docker MISP image (formerly hosted at <https://github.com/ostefano/docker-misp>, now deprecated) loosely based on CoolAcid and DSCO builds, with nearly all logic rewritten and verified for correctness and portability.
+MISP OpenShift Deployment
+Fork of MISP Docker containers adapted for OpenShift compatibility.
+This repository addresses several issues when running MISP containers in OpenShift environments where containers run with random non-root UIDs and restricted permissions.
 
 Notable features:
 
