@@ -25,9 +25,14 @@ init_configuration() {
 }
 
 init_workers() {
-
     echo "... starting background workers"
-    stdbuf -oL supervisorctl start misp-workers:*
+    
+    # Ensure supervisor socket is accessible
+    if [ -S /var/run/supervisor.sock ]; then
+        chmod 0770 /var/run/supervisor.sock
+    fi
+    
+    stdbuf -oL supervisorctl start misp-workers:* || echo "Warning: Failed to start some workers"
 }
 
 configure_gnupg() {
