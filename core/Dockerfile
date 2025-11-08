@@ -304,10 +304,10 @@ EOF
     RUN tar -xzf /pecl_libs.tar.gz && rm /pecl_libs.tar.gz
 
     # Do an early chown to limit image size
-    COPY --from=python-build --chown=www-data:www-data --chmod=0550 /var/www/MISP /var/www/MISP
-    COPY --from=composer-build --chown=www-data:www-data --chmod=0550 /tmp/composer.lock /var/www/MISP/app/composer.lock
-    COPY --from=composer-build --chown=www-data:www-data --chmod=0550 /tmp/Vendor /var/www/MISP/app/Vendor
-    COPY --from=composer-build --chown=www-data:www-data --chmod=0550 /tmp/Plugin /var/www/MISP/app/Plugin
+    COPY --from=python-build --chmod=0550 /var/www/MISP /var/www/MISP
+    COPY --from=composer-build --chmod=0550 /tmp/composer.lock /var/www/MISP/app/composer.lock
+    COPY --from=composer-build --chmod=0550 /tmp/Vendor /var/www/MISP/app/Vendor
+    COPY --from=composer-build --chmod=0550 /tmp/Plugin /var/www/MISP/app/Plugin
 
     # Gather these in one layer, only act on actual directories under /etc/php/
     RUN <<-EOF
@@ -336,48 +336,47 @@ EOF
     #   3) Directories writable, because sometimes MISP add new files
 
     RUN <<-EOF
-        cp -R /var/www/MISP/app/files /var/www/MISP/app/files.dist
-        echo "${CORE_COMMIT:-${CORE_TAG}}" > /var/www/MISP/app/files/VERSION
-        cp -R /var/www/MISP/app/Config /var/www/MISP/app/Config.dist
-        find /var/www/MISP \( ! -user www-data -or ! -group www-data \) -exec chown www-data:www-data '{}' +;
-        find /var/www/MISP -not -perm 550 -type f -exec chmod 0550 '{}' +;
-        find /var/www/MISP -not -perm 770 -type d -exec chmod 0770 '{}' +;
-        # Diagnostics wants this file to be present and writable even if we do not use git in docker land
-        touch /var/www/MISP/.git/ORIG_HEAD && chmod 0600 /var/www/MISP/.git/ORIG_HEAD && chown www-data:www-data /var/www/MISP/.git/ORIG_HEAD
+    cp -R /var/www/MISP/app/files /var/www/MISP/app/files.dist
+    echo "${CORE_COMMIT:-${CORE_TAG}}" > /var/www/MISP/app/files/VERSION
+    cp -R /var/www/MISP/app/Config /var/www/MISP/app/Config.dist
+    
+    # Change ownership to root:root (group 0)
+    chown -R root:0 /var/www/MISP
+    
+    # Files: read/write for owner and group (0660 = rw-rw----)
+    find /var/www/MISP -type f -exec chmod 0660 '{}' +
+    
+    # Directories: rwx for owner and group (0770 = rwxrwx---)
+    find /var/www/MISP -type d -exec chmod 0770 '{}' +
+    
+    # Ensure critical writable directories exist
+    mkdir -p /var/www/MISP/app/tmp/logs
+    mkdir -p /var/www/MISP/app/tmp/cache
+    mkdir -p /var/www/MISP/app/files
+    mkdir -p /var/www/MISP/app/webroot
+    
+    # Diagnostics wants this file to be present and writable
+    touch /var/www/MISP/.git/ORIG_HEAD
+    chmod 0660 /var/www/MISP/.git/ORIG_HEAD
 EOF
-RUN chgrp -R 0 /var/www/MISP/ && \
-    chmod -R g=u /var/www/MISP/
-   
-RUN chgrp -R 0 /var/run/ && \
-    chmod -R g=u /var/run/
+
     
-RUN chgrp -R 0 /run/php/ && \
-    chmod -R g=u /run/php/
+# Copy all our image specific files to appropriate locations
+COPY files/ /
 
-RUN chgrp -R 0 /etc/php/ && \
-    chmod -R g=u /etc/php/
+# Create directory for GPG secret mount
+RUN mkdir -p /etc/misp-gpg-secret
 
-RUN chgrp -R 0 /var/log/ && \
-    chmod -R g=u /var/log/
+# Consolidate all group permission fixes for OpenShift
+RUN <<-EOF
+    for dir in /var/run /run/php /var/log /var/lib/nginx /etc/nginx /etc/php /etc/cron.d /etc/nginx/includes /etc/misp-gpg-secret; do
+        if [ -d "$dir" ]; then
+            chgrp -R 0 "$dir"
+            chmod -R g=u "$dir"
+        fi
+    done
     
-RUN mkdir -p /etc/nginx/includes/
-
-RUN chgrp -R 0 /etc/nginx/ && \
-    chmod -R g=u /etc/nginx/
-    
-RUN chgrp -R 0 /var/lib/nginx/ && \
-    chmod -R g=u /var/lib/nginx/
-
-RUN chgrp -R 0 /etc/cron.d/ && \
-    chmod -R g=u /etc/cron.d/
-    
-    # Copy all our image specific files to appropriate locations
-    COPY files/ /
-    
-RUN chgrp -R 0 /etc/nginx/includes/ && \
-    chmod -R g=u /etc/nginx/includes/
-
-    ENTRYPOINT [ "/entrypoint.sh" ]
-
-    # Change Workdirectory
-    WORKDIR /var/www/MISP
+    # Ensure /var/www/MISP is still correct after COPY files/
+    chgrp -R 0 /var/www/MISP
+    chmod -R g+w /var/www/MISP
+EOF
