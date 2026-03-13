@@ -284,6 +284,8 @@ EOF
 # nginx: remove default site, create required dirs
 RUN rm /etc/nginx/sites-enabled/*; mkdir -p /run/php /etc/nginx/certs
 
+# Copy all image-specific files to appropriate locations
+COPY files/ /
 
 # Make a copy of the file and configuration stores, so we can sync from it
 RUN <<-EOF
@@ -331,8 +333,7 @@ RUN <<-EOF
         chmod -R g+rwX /var/log/supervisor
 EOF
 
-# Copy all image-specific files to appropriate locations
-COPY files/ /
+
 
 # Run as a non-root, non-www-data UID. GID 0 provides group access to all
 # group-writable paths prepared above. OpenShift will override this UID with
