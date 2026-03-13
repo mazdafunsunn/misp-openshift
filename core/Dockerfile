@@ -343,6 +343,11 @@ RUN <<-EOF
         touch /var/log/php8.4-fpm.log
         chgrp 0 /var/log/php8.4-fpm.log
         chmod g+rw /var/log/php8.4-fpm.log
+
+        # Remove listen.owner/group/mode so FPM doesn't try to chown the socket
+        sed -i 's/^listen\.owner\s*=.*/;listen.owner = www-data/' /etc/php/8.4/fpm/pool.d/www.conf
+        sed -i 's/^listen\.group\s*=.*/;listen.group = www-data/' /etc/php/8.4/fpm/pool.d/www.conf
+        sed -i 's/^listen\.mode\s*=.*/;listen.mode = 0660/' /etc/php/8.4/fpm/pool.d/www.conf
 EOF
 
 
