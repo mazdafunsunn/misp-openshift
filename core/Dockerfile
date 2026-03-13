@@ -284,15 +284,6 @@ EOF
 # nginx: remove default site, create required dirs
 RUN rm /etc/nginx/sites-enabled/*; mkdir -p /run/php /etc/nginx/certs
 
-# Configure nginx to listen on unprivileged ports (8080/8443) for OpenShift.
-# Ports below 1024 are rejected by the kernel under restricted SCC.
-RUN <<-EOF
-        find /etc/nginx -name '*.conf' -exec \
-            sed -i -e 's/listen 80;/listen 8080;/g' \
-                   -e 's/listen 443/listen 8443/g' \
-                   -e 's/listen \[::\]:80/listen [::]:8080/g' \
-                   -e 's/listen \[::\]:443/listen [::]:8443/g' {} +
-EOF
 
 # Make a copy of the file and configuration stores, so we can sync from it
 RUN <<-EOF
@@ -330,6 +321,14 @@ RUN <<-EOF
         mkdir -p /var/spool/rsyslog
         chgrp -R 0 /var/spool/rsyslog
         chmod -R g+rwX /var/spool/rsyslog
+
+        # supervisor privs
+        mkdir -p /var/run/supervisor
+        chgrp -R 0 /var/run/supervisor
+        chmod -R g+rwX /var/run/supervisor
+        mkdir -p /var/log/supervisor
+        chgrp -R 0 /var/log/supervisor
+        chmod -R g+rwX /var/log/supervisor
 EOF
 
 # Copy all image-specific files to appropriate locations
