@@ -243,7 +243,7 @@ RUN <<-EOF
         cat > /etc/rsyslog.conf << 'RSYSLOG'
 # Minimal rsyslog config for container (stdout only)
 global(processInternalMessages="on")
-module(load="imuxsock")
+#module(load="imuxsock")
 *.* /proc/1/fd/1
 RSYSLOG
 EOF
@@ -311,6 +311,11 @@ RUN <<-EOF
         chgrp -R 0 /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx
         chmod -R g+rwX /var/log/nginx /var/lib/nginx /run/nginx /etc/nginx
 
+        # Remove user directive (makes no sense without root)
+        sed -i 's/^user www-data;//' /etc/nginx/nginx.conf
+        # Move pid into the writable directory
+        sed -i 's|pid /run/nginx.pid;|pid /run/nginx/nginx.pid;|' /etc/nginx/nginx.conf
+
         # PHP-FPM socket dir
         chgrp -R 0 /run/php
         chmod -R g+rwX /run/php
@@ -331,6 +336,13 @@ RUN <<-EOF
         mkdir -p /var/log/supervisor
         chgrp -R 0 /var/log/supervisor
         chmod -R g+rwX /var/log/supervisor
+
+
+        chgrp -R 0 /etc/php
+        chmod -R g+rwX /etc/php
+        touch /var/log/php8.4-fpm.log
+        chgrp 0 /var/log/php8.4-fpm.log
+        chmod g+rw /var/log/php8.4-fpm.log
 EOF
 
 
